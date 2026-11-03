@@ -1,0 +1,21 @@
+# AI-VAPT Agent — Backend Dependencies
+# Tested with Python 3.14 on Windows
+# Install with: pip install -r requirements.txt --prefer-binary
+
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+
+# pydantic v2 — pydantic-core must be installed as a binary wheel
+# (Python 3.14 requires a pre-built wheel; do NOT let pip build from source)
+pydantic==2.13.4
+pydantic-settings==2.7.0
+
+# SQLAlchemy 2.1+ with asyncio support (greenlet) and Python 3.14 Union fix
+sqlalchemy[asyncio]>=2.1.0
+
+aiosqlite==0.20.0
+alembic==1.14.0
+python-multipart==0.0.18
+python-dotenv==1.0.1
+httpx==0.28.1
+aiofiles==24.1.0
