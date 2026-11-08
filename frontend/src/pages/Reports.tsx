@@ -91,14 +91,18 @@ export default function Reports() {
           <select
             value={selectedId}
             onChange={(e) => handleSelectAssessment(e.target.value)}
-            className="input-field text-xs py-2 max-w-xs"
+            className="input-field text-xs py-2 max-w-xs bg-slate-950 text-slate-100 border-slate-700"
             disabled={loading || loadingSummary}
           >
-            {assessments.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name} ({a.target_host})
-              </option>
-            ))}
+            {assessments.length === 0 ? (
+              <option value="">No Assessments Available</option>
+            ) : (
+              assessments.map((a) => (
+                <option key={a.id} value={a.id} className="bg-slate-950 text-slate-100">
+                  {a.name} ({a.target_host})
+                </option>
+              ))
+            )}
           </select>
 
           <button

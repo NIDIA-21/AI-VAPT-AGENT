@@ -7,26 +7,42 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Deep navy backgrounds
+        // Ultra-dark stealth navy / hacker black backgrounds
         navy: {
-          950: '#050d1a',
-          900: '#0a1628',
-          800: '#0f1f3d',
-          700: '#162447',
-          600: '#1a2d55',
+          950: '#020611', // Deepest pitch void
+          900: '#040916', // Command shell background
+          850: '#070e1f', // Sub-panels
+          800: '#091226', // Tactical cards & modules
+          750: '#0c1730', // Card hover state
+          700: '#0f1d3d', // Elevated borders & dialogs
+          600: '#15274f', // Active interactive states
         },
         // Charcoal surfaces
         charcoal: {
-          900: '#111827',
-          800: '#1f2937',
-          700: '#374151',
-          600: '#4b5563',
+          950: '#020408',
+          900: '#090d16',
+          800: '#121826',
+          700: '#1e2638',
+          600: '#2d374d',
+        },
+        // Cyber & Hacker terminal accents
+        cyber: {
+          black: '#01040a',
+          dark: '#030712',
+          panel: '#060b18',
+          border: '#111d36',
+          cyan: '#00f0ff',
+          neon: '#06b6d4',
+          matrix: '#10b981',
+          lime: '#22c55e',
+          amber: '#f59e0b',
+          crimson: '#f43f5e',
         },
         // Electric blue/cyan accents
         electric: {
-          blue: '#3b82f6',
+          blue: '#2563eb',
           cyan: '#06b6d4',
-          indigo: '#6366f1',
+          indigo: '#4f46e5',
         },
         // Severity colors
         severity: {
@@ -39,13 +55,15 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+        mono: ['JetBrains Mono', 'Fira Code', 'Courier New', 'monospace'],
       },
       boxShadow: {
-        'glow-blue': '0 0 20px rgba(59, 130, 246, 0.25)',
-        'glow-cyan': '0 0 20px rgba(6, 182, 212, 0.25)',
-        'glow-red': '0 0 20px rgba(239, 68, 68, 0.15)',
-        'card': '0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.6)',
+        'glow-blue': '0 0 20px rgba(37, 99, 235, 0.25)',
+        'glow-cyan': '0 0 25px rgba(6, 182, 212, 0.3)',
+        'glow-matrix': '0 0 25px rgba(16, 185, 129, 0.3)',
+        'glow-red': '0 0 20px rgba(239, 68, 68, 0.25)',
+        'card': '0 4px 20px -2px rgba(0, 0, 0, 0.7), 0 2px 6px -1px rgba(0, 0, 0, 0.5)',
+        'hacker': '0 0 1px 1px rgba(6, 182, 212, 0.2), 0 10px 30px -5px rgba(0, 0, 0, 0.8)',
       },
       animation: {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',

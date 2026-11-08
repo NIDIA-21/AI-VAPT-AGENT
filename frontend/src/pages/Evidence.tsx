@@ -122,14 +122,18 @@ export default function Evidence() {
           <select
             value={selectedAssessmentId}
             onChange={(e) => handleSelectAssessment(e.target.value)}
-            className="input-field text-xs py-2 max-w-xs"
+            className="input-field text-xs py-2 max-w-xs bg-slate-950 text-slate-100 border-slate-700"
             disabled={loading || correlating}
           >
-            {assessments.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name} ({a.status})
-              </option>
-            ))}
+            {assessments.length === 0 ? (
+              <option value="">No Assessments Available</option>
+            ) : (
+              assessments.map((a) => (
+                <option key={a.id} value={a.id} className="bg-slate-950 text-slate-100">
+                  {a.name} ({a.status})
+                </option>
+              ))
+            )}
           </select>
 
           <button
