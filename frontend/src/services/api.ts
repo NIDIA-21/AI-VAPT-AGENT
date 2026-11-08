@@ -20,6 +20,14 @@ import type {
   ScopeValidationResponse,
   ScopeAuditResponse,
   Assessment,
+  AgentChatRequest,
+  AgentChatResponse,
+  AgentChatSession,
+  AgentChatSessionDetail,
+  AgentPlanRequest,
+  AssessmentPlan,
+  AgentDecisionItem,
+  EngineInfo,
 } from '@/types'
 
 const api = axios.create({
@@ -106,10 +114,31 @@ export const assessmentsApi = {
     description?: string
     target_id: string
     assessment_type?: string
+    ai_plan?: string
+    decision_ids?: string[]
     created_by?: string
   }) => api.post<Assessment>('/assessments', payload).then((r) => r.data),
   get: (id: string) => api.get<Assessment>(`/assessments/${id}`).then((r) => r.data),
   delete: (id: string) => api.delete(`/assessments/${id}`).then((r) => r.data),
+}
+
+// ── Conversational AI Agent & Planner ───────────────────────────────────────
+
+export const agentApi = {
+  chat: (payload: AgentChatRequest) =>
+    api.post<AgentChatResponse>('/agent/chat', payload).then((r) => r.data),
+  listSessions: (limit = 20) =>
+    api.get<AgentChatSession[]>('/agent/sessions', { params: { limit } }).then((r) => r.data),
+  getSession: (sessionId: string) =>
+    api.get<AgentChatSessionDetail>(`/agent/sessions/${sessionId}`).then((r) => r.data),
+  deleteSession: (sessionId: string) =>
+    api.delete<{ message: string }>(`/agent/sessions/${sessionId}`).then((r) => r.data),
+  generatePlan: (payload: AgentPlanRequest) =>
+    api.post<AssessmentPlan>('/agent/plan', payload).then((r) => r.data),
+  listDecisions: (params?: { target_id?: string; assessment_id?: string; session_id?: string; limit?: number }) =>
+    api.get<AgentDecisionItem[]>('/agent/decisions', { params }).then((r) => r.data),
+  engineInfo: () =>
+    api.get<EngineInfo>('/agent/engine-info').then((r) => r.data),
 }
 
 export default api

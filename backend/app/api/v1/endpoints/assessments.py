@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.session import get_db
-from app.models.models import Assessment, AssessmentStatus, AuditLog, AuthorizedTarget
+from app.models.models import AgentDecision, Assessment, AssessmentStatus, AuditLog, AuthorizedTarget
 from app.schemas.schemas import AssessmentCreate, AssessmentResponse, MessageResponse
 from app.services.scope_validator import ScopeValidationService
 
@@ -75,11 +75,19 @@ async def create_assessment(payload: AssessmentCreate, db: AsyncSession = Depend
         target_id=payload.target_id,
         assessment_type=payload.assessment_type or "Network & Web",
         status=AssessmentStatus.DRAFT.value,
+        ai_plan=payload.ai_plan,
         validated_scope_snapshot=json.dumps(scope_snapshot),
         created_by=payload.created_by or "lead_analyst",
     )
     db.add(assessment)
     await db.flush()
+
+    # Link decisions if IDs provided
+    if payload.decision_ids:
+        for dec_id in payload.decision_ids:
+            dec = await db.get(AgentDecision, dec_id)
+            if dec:
+                dec.assessment_id = assessment.id
 
     db.add(
         AuditLog(

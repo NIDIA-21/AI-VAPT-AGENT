@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, useLocation, Link } from 'react-router-dom'
 import {
   ShieldAlert,
   ShieldCheck,
@@ -14,13 +14,23 @@ import {
   Layers,
   FileCode,
   Info,
+  Bot,
+  Sparkles,
+  Terminal,
+  RefreshCw,
 } from 'lucide-react'
 import { clsx } from 'clsx'
-import { targetsApi, assessmentsApi, scopeApi } from '@/services/api'
-import type { AuthorizedTarget, ScopeValidationResponse } from '@/types'
+import { targetsApi, assessmentsApi, scopeApi, agentApi } from '@/services/api'
+import type {
+  AuthorizedTarget,
+  ScopeValidationResponse,
+  AssessmentPlan,
+  PlanDecision,
+} from '@/types'
 
 export default function NewAssessment() {
   const navigate = useNavigate()
+  const location = useLocation()
 
   // Targets state
   const [targets, setTargets] = useState<AuthorizedTarget[]>([])
@@ -35,25 +45,55 @@ export default function NewAssessment() {
   const [testPort, setTestPort] = useState<string>('443')
   const [testPath, setTestPath] = useState<string>('/')
 
+  // Sprint 4: Natural Language Requirements & AI Planner
+  const [requirements, setRequirements] = useState(
+    'Perform comprehensive vulnerability assessment across open network services and web endpoints. Identify OWASP Top 10 vulnerabilities, weak headers, and TLS configurations.'
+  )
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([
+    'network_discovery',
+    'web_vapt',
+    'server_config',
+    'tls_audit',
+  ])
+  const [generatedPlan, setGeneratedPlan] = useState<AssessmentPlan | null>(null)
+  const [planning, setPlanning] = useState(false)
+  const [decisionIds, setDecisionIds] = useState<string[]>([])
+  const [viewingDecisions, setViewingDecisions] = useState<PlanDecision[] | null>(null)
+
   // Scope Pre-validation state
   const [validationResult, setValidationResult] = useState<ScopeValidationResponse | null>(null)
   const [validating, setValidating] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  // Fetch targets on mount
+  // Fetch targets on mount & handle incoming state from AI Agent chat
   useEffect(() => {
     async function fetchTargets() {
       try {
         setLoadingTargets(true)
         const list = await targetsApi.list()
         setTargets(list)
-        // Auto-select first active target if available
-        const firstActive = list.find((t) => (t.status || '').toUpperCase() === 'ACTIVE')
-        if (firstActive) {
-          setSelectedTargetId(firstActive.id)
-        } else if (list.length > 0) {
-          setSelectedTargetId(list[0].id)
+
+        const stateTargetId = (location.state as any)?.targetId
+        const statePlanSummary = (location.state as any)?.planSummary
+        const stateDecisionIds = (location.state as any)?.decisionIds
+
+        if (stateTargetId && list.some((t) => t.id === stateTargetId)) {
+          setSelectedTargetId(stateTargetId)
+        } else {
+          const firstActive = list.find((t) => (t.status || '').toUpperCase() === 'ACTIVE')
+          if (firstActive) {
+            setSelectedTargetId(firstActive.id)
+          } else if (list.length > 0) {
+            setSelectedTargetId(list[0].id)
+          }
+        }
+
+        if (statePlanSummary) {
+          setDescription(`Planned via AI Agent: ${statePlanSummary}`)
+        }
+        if (stateDecisionIds && Array.isArray(stateDecisionIds)) {
+          setDecisionIds(stateDecisionIds)
         }
       } catch (err: any) {
         setErrorMessage(err?.userMessage || 'Failed to load authorized targets.')
@@ -62,7 +102,7 @@ export default function NewAssessment() {
       }
     }
     fetchTargets()
-  }, [])
+  }, [location.state])
 
   // Currently selected target object
   const currentTarget = targets.find((t) => t.id === selectedTargetId) || null
@@ -101,6 +141,43 @@ export default function NewAssessment() {
     return () => clearTimeout(timer)
   }, [currentTarget, testPort, testPath])
 
+  // Toggle Category
+  const toggleCategory = (cat: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
+    )
+  }
+
+  // Generate Plan with AI
+  const handleGeneratePlan = async () => {
+    if (!currentTarget) return
+    if (!isTargetActive) {
+      alert(`Target ${currentTarget.host} is not active.`)
+      return
+    }
+
+    try {
+      setPlanning(true)
+      setErrorMessage(null)
+      const plan = await agentApi.generatePlan({
+        target_id: currentTarget.id,
+        requirements,
+        assessment_type: assessmentType,
+        selected_categories: selectedCategories,
+        operator: createdBy,
+      })
+      setGeneratedPlan(plan)
+      setDecisionIds(plan.decisions.map((d) => d.id))
+      if (!assessmentName) {
+        setAssessmentName(plan.assessment_name)
+      }
+    } catch (err: any) {
+      setErrorMessage(err?.userMessage || err?.response?.data?.detail || 'AI Plan generation failed.')
+    } finally {
+      setPlanning(false)
+    }
+  }
+
   // Handle Assessment Creation
   const handleCreateAssessment = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -135,6 +212,8 @@ export default function NewAssessment() {
         description: description.trim() || undefined,
         target_id: currentTarget.id,
         assessment_type: assessmentType,
+        ai_plan: generatedPlan ? generatedPlan.summary : undefined,
+        decision_ids: decisionIds.length > 0 ? decisionIds : undefined,
         created_by: createdBy.trim() || 'lead_analyst',
       })
 
@@ -157,22 +236,31 @@ export default function NewAssessment() {
           <div className="flex items-center gap-2.5">
             <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" />
             <h1 className="text-xl font-bold text-slate-100 font-mono tracking-tight">
-              INITIALIZE NEW ASSESSMENT
+              INITIALIZE NEW ASSESSMENT & AI PLANNER
             </h1>
           </div>
           <p className="text-xs text-slate-400 mt-1 max-w-2xl">
-            Strict scope enforcement is mandatory. Assessments can only be configured against actively authorized
-            targets with a verified scope snapshot bound to the engagement.
+            Strict scope enforcement is mandatory. Configure assessment parameters, let the AI security agent
+            generate a tailored multi-stage plan, and review decision traces.
           </p>
         </div>
 
-        <Link
-          to="/targets"
-          className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 text-xs font-mono transition-colors"
-        >
-          <Sliders className="w-3.5 h-3.5" />
-          <span>Manage Targets</span>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            to="/agent"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-mono transition-colors"
+          >
+            <Bot className="w-3.5 h-3.5" />
+            <span>AI Chat Assistant</span>
+          </Link>
+          <Link
+            to="/targets"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-mono transition-colors"
+          >
+            <Sliders className="w-3.5 h-3.5" />
+            <span>Targets</span>
+          </Link>
+        </div>
       </div>
 
       {/* ── Error Banner ──────────────────────────────────────── */}
@@ -268,12 +356,6 @@ export default function NewAssessment() {
                       {currentTarget.valid_to ? new Date(currentTarget.valid_to).toLocaleDateString() : 'Indefinite'}
                     </span>
                   </div>
-
-                  {!isTargetActive && (
-                    <p className="text-[11px] font-sans text-rose-300 pt-1 border-t border-rose-500/20 font-semibold">
-                      This target is not active. Assessment creation is locked by strict scope security.
-                    </p>
-                  )}
                 </div>
               )}
             </div>
@@ -309,12 +391,121 @@ export default function NewAssessment() {
           )}
         </div>
 
-        {/* ── Section 2: Assessment Engagement Configuration ──── */}
+        {/* ── Section 2: AI Assessment Planner & Requirements ── */}
+        <div className="p-5 rounded-2xl bg-navy-900/90 border border-slate-800 shadow-xl space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="flex items-center gap-2">
+              <Bot className="w-4 h-4 text-cyan-400" />
+              <h2 className="text-sm font-semibold text-slate-100 font-mono">
+                2. AI ASSESSMENT PLANNER & REQUIREMENTS
+              </h2>
+            </div>
+            <span className="text-[11px] font-mono text-cyan-400">
+              Deterministic & LLM Supported
+            </span>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1.5">
+              Natural Language Assessment Objectives & Scope Requirements
+            </label>
+            <textarea
+              rows={3}
+              value={requirements}
+              onChange={(e) => setRequirements(e.target.value)}
+              placeholder="e.g. Focus on web APIs, check for outdated TLS protocols, perform non-destructive spidering, and flag dangerous headers."
+              className="w-full px-3 py-2 text-xs rounded-xl bg-navy-950 border border-slate-700 text-slate-200 focus:outline-none focus:border-cyan-400 font-sans leading-relaxed"
+            />
+          </div>
+
+          {/* Permitted Categories */}
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-2">
+              Permitted Assessment Categories
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+              {[
+                { id: 'network_discovery', label: 'Network Discovery (Nmap)' },
+                { id: 'server_config', label: 'Server Config (Nikto)' },
+                { id: 'web_vapt', label: 'Web DAST (OWASP ZAP)' },
+                { id: 'tls_audit', label: 'TLS / Crypto Audit' },
+              ].map((cat) => {
+                const checked = selectedCategories.includes(cat.id)
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => toggleCategory(cat.id)}
+                    className={clsx(
+                      'p-2.5 rounded-xl border text-left transition-all font-mono text-[11px] flex items-center justify-between',
+                      checked
+                        ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-300 shadow-glow-cyan'
+                        : 'bg-navy-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                    )}
+                  >
+                    <span>{cat.label}</span>
+                    {checked && <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400" />}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-1">
+            <button
+              type="button"
+              onClick={handleGeneratePlan}
+              disabled={planning || !isTargetActive}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 text-white font-bold text-xs shadow-glow-cyan transition-all"
+            >
+              {planning ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+              <span>Generate AI Assessment Plan</span>
+            </button>
+          </div>
+
+          {/* Render Generated Plan Preview */}
+          {generatedPlan && (
+            <div className="mt-4 p-4 rounded-xl bg-navy-950 border border-cyan-500/30 text-xs space-y-3 font-sans">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-cyan-300 font-bold font-mono">
+                  <ShieldCheck className="w-4 h-4 text-cyan-400" />
+                  <span>AI Plan Generated ({generatedPlan.stages.length} Ordered Stages)</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setViewingDecisions(generatedPlan.decisions)}
+                  className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 font-mono text-[11px] border border-slate-700"
+                >
+                  Review Decision Trace ({generatedPlan.decisions.length})
+                </button>
+              </div>
+
+              <p className="text-slate-300">{generatedPlan.summary}</p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-[11px] pt-1">
+                {generatedPlan.stages.map((stage) => (
+                  <div key={stage.stage_number} className="p-2.5 rounded-lg bg-navy-900 border border-slate-800">
+                    <div className="flex items-center justify-between font-mono mb-1">
+                      <span className="text-cyan-400 font-bold">Stage {stage.stage_number}</span>
+                      {stage.requires_human_approval && (
+                        <span className="text-[10px] text-amber-400 font-bold">APPROVAL REQ</span>
+                      )}
+                    </div>
+                    <p className="font-semibold text-slate-200 truncate">{stage.name}</p>
+                    <p className="text-slate-400 text-[10px] truncate">{stage.recommended_tools.join(', ')}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── Section 3: Assessment Engagement Settings ────────── */}
         <div className="p-5 rounded-2xl bg-navy-900/90 border border-slate-800 shadow-xl space-y-4">
           <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
             <Layers className="w-4 h-4 text-cyan-400" />
             <h2 className="text-sm font-semibold text-slate-100 font-mono">
-              2. ASSESSMENT CONFIGURATION
+              3. ASSESSMENT CONFIGURATION
             </h2>
           </div>
 
@@ -379,74 +570,6 @@ export default function NewAssessment() {
           </div>
         </div>
 
-        {/* ── Section 3: Real-Time Scope Pre-Flight Verification ── */}
-        <div className="p-5 rounded-2xl bg-navy-900/90 border border-slate-800 shadow-xl space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <div className="flex items-center gap-2">
-              <Lock className="w-4 h-4 text-cyan-400" />
-              <h2 className="text-sm font-semibold text-slate-100 font-mono">
-                3. REAL-TIME SCOPE PRE-FLIGHT VERIFICATION
-              </h2>
-            </div>
-            <span className="text-[11px] font-mono text-cyan-400">
-              Evaluated by ScopeValidationService
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[11px] font-mono text-slate-400 mb-1">
-                Target Port Test
-              </label>
-              <input
-                type="number"
-                value={testPort}
-                onChange={(e) => setTestPort(e.target.value)}
-                placeholder="443"
-                className="w-full px-3 py-1.5 text-xs rounded-lg bg-navy-950 border border-slate-700 text-slate-200 font-mono"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] font-mono text-slate-400 mb-1">
-                Initial Path Test
-              </label>
-              <input
-                type="text"
-                value={testPath}
-                onChange={(e) => setTestPath(e.target.value)}
-                placeholder="/"
-                className="w-full px-3 py-1.5 text-xs rounded-lg bg-navy-950 border border-slate-700 text-slate-200 font-mono"
-              />
-            </div>
-          </div>
-
-          {/* Validation Feedback */}
-          {validationResult && (
-            <div
-              className={clsx(
-                'p-4 rounded-xl border text-xs font-mono transition-all',
-                validationResult.allowed
-                  ? 'bg-emerald-950/20 border-emerald-500/40 text-emerald-200'
-                  : 'bg-rose-950/20 border-rose-500/40 text-rose-200'
-              )}
-            >
-              <div className="flex items-center gap-2 font-bold">
-                {validationResult.allowed ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                ) : (
-                  <XCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
-                )}
-                <span>
-                  {validationResult.allowed
-                    ? 'PRE-FLIGHT VALIDATION PASSED: SCOPE VERIFIED'
-                    : 'PRE-FLIGHT VALIDATION FAILED: TARGET OUTSIDE PERMITTED SCOPE'}
-                </span>
-              </div>
-              <p className="mt-1 text-slate-300 font-sans text-xs">{validationResult.reason}</p>
-            </div>
-          )}
-        </div>
-
         {/* ── Submit Action ───────────────────────────────────── */}
         <div className="flex items-center justify-between pt-2">
           <Link
@@ -462,10 +585,85 @@ export default function NewAssessment() {
             className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 disabled:opacity-40 disabled:cursor-not-allowed text-navy-950 font-bold text-xs shadow-glow-cyan transition-all"
           >
             <Play className="w-4 h-4 fill-current" />
-            <span>{submitting ? 'Verifying & Initializing...' : 'Create Scoped Assessment'}</span>
+            <span>{submitting ? 'Verifying & Initializing...' : 'Create Scoped Assessment with AI Plan'}</span>
           </button>
         </div>
       </form>
+
+      {/* ── Decision Trace Modal ────────────────────────────────────── */}
+      {viewingDecisions && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/80 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-3xl my-8 p-6 rounded-2xl bg-navy-900 border border-slate-700 shadow-2xl space-y-4 text-xs font-sans">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Terminal className="w-4 h-4 text-cyan-400" />
+                <h3 className="text-base font-bold text-slate-100 font-mono">
+                  DECISION TRACE & REASONING AUDIT
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewingDecisions(null)}
+                className="text-slate-400 hover:text-slate-100 text-sm p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+              {viewingDecisions.map((dec, idx) => (
+                <div key={dec.id || idx} className="p-3.5 rounded-xl bg-navy-950 border border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between font-mono text-[11px]">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-bold">
+                        {dec.selected_tool}
+                      </span>
+                      <span className="text-slate-400 font-semibold">{dec.stage}</span>
+                    </div>
+                    <span
+                      className={clsx(
+                        'px-2 py-0.5 rounded text-[10px] font-bold border',
+                        dec.execution_status === 'PLANNED'
+                          ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+                          : 'bg-amber-500/10 text-amber-300 border-amber-500/30'
+                      )}
+                    >
+                      {dec.execution_status}
+                    </span>
+                  </div>
+
+                  <p className="text-slate-300 font-medium">{dec.rationale}</p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-2 border-t border-slate-800/80 text-[11px]">
+                    <div className="p-2 rounded bg-navy-900 border border-slate-800/80">
+                      <span className="text-cyan-400 font-mono font-semibold block mb-0.5">
+                        🔍 Concrete Observations:
+                      </span>
+                      <span className="text-slate-300">{dec.evidence_and_observations}</span>
+                    </div>
+                    <div className="p-2 rounded bg-navy-900 border border-slate-800/80">
+                      <span className="text-amber-400 font-mono font-semibold block mb-0.5">
+                        🧠 AI Inference:
+                      </span>
+                      <span className="text-slate-300">{dec.ai_inferences}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-end pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setViewingDecisions(null)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300"
+              >
+                Close Trace
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

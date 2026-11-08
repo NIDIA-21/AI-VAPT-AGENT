@@ -305,3 +305,132 @@ export interface AuditLogEntry {
   ip_address: string | null
   created_at: string
 }
+
+
+// ── Sprint 4: Conversational AI Agent & Decision Trace Types ──────────────────
+
+export interface EngineInfo {
+  active_engine: string
+  model: string
+  is_fallback: boolean
+  provider_type: string
+  status_label: string
+}
+
+export interface PlanStage {
+  stage_number: number
+  name: string
+  category: string
+  description: string
+  recommended_tools: string[]
+  rationale: string
+  requires_human_approval: boolean
+}
+
+export interface PlanDecision {
+  id: string
+  stage: string
+  selected_tool: string
+  rationale: string
+  evidence_and_observations: string
+  ai_inferences: string
+  execution_status: string
+  parameters?: Record<string, any> | null
+  created_at: string
+}
+
+export interface ToolRecommendation {
+  tool: string
+  category: string
+  recommended: boolean
+  flags: string
+  rationale: string
+}
+
+export interface AssessmentPlan {
+  plan_id: string
+  target_id: string
+  target_host: string
+  target_name: string
+  auth_reference: string | null
+  assessment_name: string
+  assessment_type: string
+  scope_status: string
+  summary: string
+  stages: PlanStage[]
+  tool_recommendations: ToolRecommendation[]
+  decisions: PlanDecision[]
+  engine_info: EngineInfo
+  created_at: string
+}
+
+export interface AgentChatRequest {
+  message: string
+  session_id?: string
+  target_id?: string
+  user_name?: string
+}
+
+export interface AgentChatResponse {
+  session_id: string
+  message_id: string
+  role: string
+  content: string
+  engine_info: EngineInfo
+  plan?: AssessmentPlan | null
+  decisions?: PlanDecision[] | null
+  created_at: string
+}
+
+export interface AgentChatMessage {
+  id: string
+  session_id: string
+  role: 'user' | 'assistant' | 'system' | string
+  content: string
+  meta_info?: string | null
+  created_at: string
+}
+
+export interface AgentChatSession {
+  id: string
+  title: string
+  target_id?: string | null
+  target_host?: string | null
+  message_count: number
+  created_by?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface AgentChatSessionDetail {
+  id: string
+  title: string
+  target_id?: string | null
+  created_by?: string | null
+  created_at: string
+  updated_at: string
+  messages: AgentChatMessage[]
+}
+
+export interface AgentPlanRequest {
+  target_id: string
+  requirements: string
+  assessment_type?: string
+  selected_categories?: string[]
+  operator?: string
+}
+
+export interface AgentDecisionItem {
+  id: string
+  assessment_id?: string | null
+  target_id?: string | null
+  session_id?: string | null
+  stage: string
+  selected_tool: string
+  rationale: string
+  evidence_and_observations: string
+  ai_inferences: string
+  execution_status: string
+  parameters?: string | null
+  created_at: string
+}

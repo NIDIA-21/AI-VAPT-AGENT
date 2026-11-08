@@ -126,18 +126,20 @@ async def create_target(payload: AuthorizedTargetCreate, db: AsyncSession = Depe
             detail=str(err),
         )
 
-    # 2. Check for duplicate host among non-deleted targets
+    # 2. Check for duplicate host
     existing = await db.scalar(
-        select(AuthorizedTarget).where(
-            AuthorizedTarget.host == norm_host,
-            AuthorizedTarget.is_deleted == False,
-        )
+        select(AuthorizedTarget).where(AuthorizedTarget.host == norm_host)
     )
     if existing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"Target host '{norm_host}' is already registered (Target ID: {existing.id}).",
-        )
+        if not existing.is_deleted:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Target host '{norm_host}' is already registered (Target ID: {existing.id}).",
+            )
+        else:
+            # Re-registering previously decommissioned target: purge old record cleanly
+            await db.delete(existing)
+            await db.flush()
 
     # 3. Port parsing and validation
     try:

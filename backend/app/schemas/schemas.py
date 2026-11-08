@@ -155,6 +155,8 @@ class AssessmentCreate(BaseModel):
     description: Optional[str] = None
     target_id: str
     assessment_type: Optional[str] = "Network & Web"
+    ai_plan: Optional[str] = None
+    decision_ids: Optional[List[str]] = None
     created_by: Optional[str] = None
 
 
@@ -301,3 +303,81 @@ class AuditLogResponse(BaseModel):
 class MessageResponse(BaseModel):
     message: str
     data: Optional[Any] = None
+
+
+# ── Sprint 4: Conversational AI Agent & Decision Trace Schemas ────────────────
+
+
+class AgentChatRequest(BaseModel):
+    message: str = Field(..., min_length=1)
+    session_id: Optional[str] = None
+    target_id: Optional[str] = None
+    user_name: Optional[str] = "security_analyst"
+
+
+class AgentChatResponse(BaseModel):
+    session_id: str
+    message_id: str
+    role: str
+    content: str
+    engine_info: Dict[str, Any]
+    plan: Optional[Dict[str, Any]] = None
+    decisions: Optional[List[Dict[str, Any]]] = None
+    created_at: str
+
+
+class AgentChatMessageItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    session_id: str
+    role: str
+    content: str
+    meta_info: Optional[str] = None
+    created_at: datetime
+
+
+class AgentChatSessionItem(BaseModel):
+    id: str
+    title: str
+    target_id: Optional[str] = None
+    target_host: Optional[str] = None
+    message_count: int = 0
+    created_by: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class AgentChatSessionDetail(BaseModel):
+    id: str
+    title: str
+    target_id: Optional[str] = None
+    created_by: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    messages: List[AgentChatMessageItem] = Field(default_factory=list)
+
+
+class AgentPlanRequest(BaseModel):
+    target_id: str = Field(..., min_length=1)
+    requirements: str = Field(default="Comprehensive vulnerability assessment with web and network discovery.")
+    assessment_type: Optional[str] = "full_vapt"
+    selected_categories: Optional[List[str]] = None
+    operator: Optional[str] = "security_analyst"
+
+
+class AgentDecisionItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    assessment_id: Optional[str] = None
+    target_id: Optional[str] = None
+    session_id: Optional[str] = None
+    stage: str
+    selected_tool: str
+    rationale: str
+    evidence_and_observations: str
+    ai_inferences: str
+    execution_status: str
+    parameters: Optional[str] = None
+    created_at: datetime
