@@ -1,7 +1,16 @@
 """API v1 router — aggregates all endpoint routers."""
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import health, dashboard, targets, assessments, scope, agent
+from app.api.v1.endpoints import (
+    health,
+    dashboard,
+    targets,
+    assessments,
+    scope,
+    agent,
+    scanners,
+    findings,
+)
 
 api_router = APIRouter()
 
@@ -11,3 +20,5 @@ api_router.include_router(targets.router)
 api_router.include_router(scope.router)
 api_router.include_router(assessments.router)
 api_router.include_router(agent.router)
+api_router.include_router(scanners.router, prefix="/scanners", tags=["Scanners"])
+api_router.include_router(findings.router, prefix="/findings", tags=["Findings"])

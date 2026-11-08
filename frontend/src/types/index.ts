@@ -217,18 +217,81 @@ export interface Finding {
   id: string
   assessment_id: string
   scan_job_id: string | null
+  source_tool?: string
   title: string
   description: string | null
   severity: SeverityLevel
   cve_id: string | null
+  cwe_id?: string | null
   cvss_score: number | null
   host: string | null
   port: number | null
+  url_path?: string | null
   service: string | null
   evidence: string | null
+  scanner_reference?: string | null
+  confidence?: string | null
+  validation_status?: string
+  fingerprint?: string | null
+  risk_score?: number | null
+  risk_explanation?: string | null
+  raw_evidence_artifacts?: string | null
   ai_explanation: string | null
   is_false_positive: boolean
   created_at: string
+}
+
+export interface ScanJob {
+  id: string
+  assessment_id: string
+  scanner: string
+  status: 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED' | string
+  target_host?: string | null
+  parameters?: string | null
+  scope_snapshot?: string | null
+  raw_output?: string | null
+  error_message?: string | null
+  started_at?: string | null
+  finished_at?: string | null
+  created_at: string
+  findings_count?: number
+}
+
+export interface CorrelationResult {
+  assessment_id: string
+  target_host: string
+  engine: string
+  total_findings: number
+  attack_chains: {
+    chain_id: string
+    title: string
+    severity: string
+    steps: {
+      stage: string
+      observation: string
+      inference?: string
+      source: string
+    }[]
+  }[]
+  suspicious_false_positives: {
+    finding_id: string
+    finding_title: string
+    source_tool: string
+    port: number
+    observed_evidence: string
+    ai_inference: string
+    recommended_action: string
+  }[]
+  remediation_roadmap: {
+    priority_rank: number
+    finding_id: string
+    title: string
+    severity: string
+    risk_score: number
+    target: string
+    remediation_action: string
+  }[]
+  analyst_summary: string
 }
 
 // ── Dashboard Stats & Severity ──────────────────────────────────────────────

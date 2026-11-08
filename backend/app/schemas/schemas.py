@@ -381,3 +381,76 @@ class AgentDecisionItem(BaseModel):
     execution_status: str
     parameters: Optional[str] = None
     created_at: datetime
+
+
+# ── Phase 5: Tool Integrations & Normalized Findings Schemas ─────────────────
+
+
+class FindingResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    assessment_id: str
+    scan_job_id: Optional[str] = None
+    source_tool: str
+    title: str
+    description: Optional[str] = None
+    severity: str
+    cve_id: Optional[str] = None
+    cwe_id: Optional[str] = None
+    cvss_score: Optional[float] = None
+    host: Optional[str] = None
+    port: Optional[int] = None
+    url_path: Optional[str] = None
+    service: Optional[str] = None
+    evidence: Optional[str] = None
+    scanner_reference: Optional[str] = None
+    confidence: Optional[str] = "Medium"
+    validation_status: str = "UNVALIDATED"
+    fingerprint: Optional[str] = None
+    risk_score: Optional[float] = None
+    risk_explanation: Optional[str] = None
+    raw_evidence_artifacts: Optional[str] = None
+    is_false_positive: bool = False
+    created_at: datetime
+
+
+class FindingStatusUpdate(BaseModel):
+    validation_status: str = Field(..., description="CONFIRMED, FALSE_POSITIVE, or INVESTIGATING")
+    notes: Optional[str] = None
+
+
+class ScanJobResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    assessment_id: str
+    scanner: str
+    status: str
+    target_host: Optional[str] = None
+    parameters: Optional[str] = None
+    scope_snapshot: Optional[str] = None
+    raw_output: Optional[str] = None
+    error_message: Optional[str] = None
+    started_at: Optional[datetime] = None
+    finished_at: Optional[datetime] = None
+    created_at: datetime
+    findings_count: Optional[int] = 0
+
+
+class NmapExecuteRequest(BaseModel):
+    target_id: str = Field(..., description="Authorized target UUID")
+    assessment_id: Optional[str] = None
+    ports_override: Optional[List[int]] = None
+
+
+class ReportImportRequest(BaseModel):
+    target_host: str = Field(..., description="Target hostname or IP matching registered scope")
+    assessment_id: Optional[str] = None
+    report_content: str = Field(..., description="Raw JSON or XML report text")
+    format: Optional[str] = "json"
+
+
+class CorrelationRequest(BaseModel):
+    assessment_id: str = Field(..., description="Assessment UUID to run multi-tool correlation against")
+

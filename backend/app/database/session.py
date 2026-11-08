@@ -85,6 +85,39 @@ async def init_db() -> None:
                     for col_name, col_type in new_cols.items():
                         if col_name not in t_cols:
                             connection.exec_driver_sql(f"ALTER TABLE authorized_targets ADD COLUMN {col_name} {col_type}")
+
+                # ScanJobs migrations
+                res_s = connection.exec_driver_sql("PRAGMA table_info(scan_jobs)")
+                s_cols = [r[1] for r in res_s.fetchall()]
+                if s_cols:
+                    new_scanjob_cols = {
+                        "target_host": "VARCHAR(255)",
+                        "parameters": "TEXT",
+                        "scope_snapshot": "TEXT",
+                    }
+                    for col_name, col_type in new_scanjob_cols.items():
+                        if col_name not in s_cols:
+                            connection.exec_driver_sql(f"ALTER TABLE scan_jobs ADD COLUMN {col_name} {col_type}")
+
+                # Findings migrations
+                res_f = connection.exec_driver_sql("PRAGMA table_info(findings)")
+                f_cols = [r[1] for r in res_f.fetchall()]
+                if f_cols:
+                    new_finding_cols = {
+                        "source_tool": "VARCHAR(64) DEFAULT 'Nmap'",
+                        "url_path": "VARCHAR(512)",
+                        "cwe_id": "VARCHAR(64)",
+                        "scanner_reference": "VARCHAR(255)",
+                        "confidence": "VARCHAR(32) DEFAULT 'Medium'",
+                        "validation_status": "VARCHAR(64) DEFAULT 'UNVALIDATED'",
+                        "fingerprint": "VARCHAR(128)",
+                        "risk_score": "FLOAT",
+                        "risk_explanation": "TEXT",
+                        "raw_evidence_artifacts": "TEXT",
+                    }
+                    for col_name, col_type in new_finding_cols.items():
+                        if col_name not in f_cols:
+                            connection.exec_driver_sql(f"ALTER TABLE findings ADD COLUMN {col_name} {col_type}")
             except Exception:
                 pass
                 
