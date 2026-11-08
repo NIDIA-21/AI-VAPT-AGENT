@@ -196,43 +196,43 @@ export default function Findings() {
               placeholder="Search findings by CVE, CWE, title, host, or keyword..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="input-field w-full pl-9 text-sm"
+              className="w-full pl-9 py-2 text-sm bg-slate-950 text-slate-100 border border-slate-700/80 rounded-lg placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
             />
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <select
               value={severityFilter}
               onChange={(e) => setSeverityFilter(e.target.value)}
-              className="input-field text-xs py-2"
+              className="text-xs py-2 px-3 bg-slate-950 text-slate-100 border border-slate-700/80 rounded-lg focus:border-cyan-500 focus:outline-none font-mono"
             >
-              <option value="all">All Severities</option>
-              <option value="critical">Critical</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-              <option value="informational">Info</option>
+              <option value="all" className="bg-slate-950 text-slate-100">All Severities</option>
+              <option value="critical" className="bg-slate-950 text-rose-400">Critical</option>
+              <option value="high" className="bg-slate-950 text-amber-400">High</option>
+              <option value="medium" className="bg-slate-950 text-yellow-300">Medium</option>
+              <option value="low" className="bg-slate-950 text-cyan-400">Low</option>
+              <option value="informational" className="bg-slate-950 text-slate-400">Info</option>
             </select>
 
             <select
               value={toolFilter}
               onChange={(e) => setToolFilter(e.target.value)}
-              className="input-field text-xs py-2"
+              className="text-xs py-2 px-3 bg-slate-950 text-slate-100 border border-slate-700/80 rounded-lg focus:border-cyan-500 focus:outline-none font-mono"
             >
-              <option value="all">All Tools</option>
-              <option value="nmap">Nmap</option>
-              <option value="zap">OWASP ZAP</option>
-              <option value="nikto">Nikto</option>
+              <option value="all" className="bg-slate-950 text-slate-100">All Tools</option>
+              <option value="nmap" className="bg-slate-950 text-slate-100">Nmap</option>
+              <option value="zap" className="bg-slate-950 text-slate-100">OWASP ZAP</option>
+              <option value="nikto" className="bg-slate-950 text-slate-100">Nikto</option>
             </select>
 
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="input-field text-xs py-2"
+              className="text-xs py-2 px-3 bg-slate-950 text-slate-100 border border-slate-700/80 rounded-lg focus:border-cyan-500 focus:outline-none font-mono"
             >
-              <option value="all">All Statuses</option>
-              <option value="UNVALIDATED">Unvalidated</option>
-              <option value="CONFIRMED">Confirmed</option>
-              <option value="FALSE_POSITIVE">False Positive</option>
+              <option value="all" className="bg-slate-950 text-slate-100">All Statuses</option>
+              <option value="UNVALIDATED" className="bg-slate-950 text-slate-100">Unvalidated</option>
+              <option value="CONFIRMED" className="bg-slate-950 text-emerald-400">Confirmed</option>
+              <option value="FALSE_POSITIVE" className="bg-slate-950 text-slate-400">False Positive</option>
             </select>
           </div>
         </div>
@@ -474,7 +474,7 @@ export default function Findings() {
                 placeholder="e.g. Server banner confirms Nginx, signature for Apache was incorrectly triggered."
                 value={fpNote}
                 onChange={(e) => setFpNote(e.target.value)}
-                className="input-field w-full text-xs"
+                className="w-full text-xs bg-slate-950 text-slate-100 placeholder-slate-500 border border-slate-700/80 rounded-lg p-2.5 focus:border-cyan-500 focus:outline-none"
               />
             </div>
             <div className="mt-4 flex justify-end gap-2">

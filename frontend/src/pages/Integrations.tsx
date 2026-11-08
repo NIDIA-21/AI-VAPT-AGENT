@@ -296,14 +296,20 @@ export default function Integrations() {
               <select
                 value={targetHost}
                 onChange={(e) => setTargetHost(e.target.value)}
-                className="input-field w-full text-xs"
+                className="w-full text-xs bg-slate-950 text-slate-100 border border-slate-700/80 rounded-lg px-3 py-2.5 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 focus:outline-none font-mono"
                 required
               >
-                {targets.map((t) => (
-                  <option key={t.id} value={t.host}>
-                    {t.name} ({t.host})
+                {targets.length === 0 ? (
+                  <option value="" className="bg-slate-950 text-slate-400">
+                    No Authorized Targets Available
                   </option>
-                ))}
+                ) : (
+                  targets.map((t) => (
+                    <option key={t.id} value={t.host} className="bg-slate-950 text-slate-100 py-1.5">
+                      {t.name} ({t.host})
+                    </option>
+                  ))
+                )}
               </select>
             </div>
 
@@ -364,7 +370,7 @@ export default function Integrations() {
                   ? 'Paste official Nikto JSON or XML report text here...'
                   : 'Paste Nmap XML (-oX) report text here...'
               }
-              className="input-field w-full font-mono text-[11px]"
+              className="w-full font-mono text-[11px] bg-slate-950 text-slate-100 placeholder-slate-500 border border-slate-700/80 rounded-lg p-3 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 focus:outline-none"
               required
             />
           </div>

@@ -423,7 +423,7 @@ export default function Approvals() {
                   type="text"
                   value={analystId}
                   onChange={(e) => setAnalystId(e.target.value)}
-                  className="input-field w-full text-xs"
+                  className="w-full text-xs bg-slate-950 text-slate-100 border border-slate-700/80 rounded-lg px-3 py-2 focus:border-cyan-500 focus:outline-none"
                   required
                 />
               </div>
@@ -435,7 +435,7 @@ export default function Approvals() {
                   placeholder="e.g. Verified target test window with DevOps team."
                   value={decisionNotes}
                   onChange={(e) => setDecisionNotes(e.target.value)}
-                  className="input-field w-full text-xs"
+                  className="w-full text-xs bg-slate-950 text-slate-100 placeholder-slate-500 border border-slate-700/80 rounded-lg p-2.5 focus:border-cyan-500 focus:outline-none"
                 />
               </div>
             </div>
@@ -491,7 +491,7 @@ export default function Approvals() {
                   placeholder="e.g. Risk of daemon termination too high during peak production hours; reschedule."
                   value={rejectionReason}
                   onChange={(e) => setRejectionReason(e.target.value)}
-                  className="input-field w-full text-xs"
+                  className="w-full text-xs bg-slate-950 text-slate-100 placeholder-slate-500 border border-slate-700/80 rounded-lg p-2.5 focus:border-cyan-500 focus:outline-none"
                   required
                 />
               </div>
@@ -502,7 +502,7 @@ export default function Approvals() {
                   type="text"
                   value={analystId}
                   onChange={(e) => setAnalystId(e.target.value)}
-                  className="input-field w-full text-xs"
+                  className="w-full text-xs bg-slate-950 text-slate-100 border border-slate-700/80 rounded-lg px-3 py-2 focus:border-cyan-500 focus:outline-none"
                   required
                 />
               </div>
@@ -549,11 +549,11 @@ export default function Approvals() {
                 <select
                   value={newTargetId}
                   onChange={(e) => setNewTargetId(e.target.value)}
-                  className="input-field w-full text-xs"
+                  className="w-full text-xs bg-slate-950 text-slate-100 border border-slate-700/80 rounded-lg px-3 py-2 focus:border-cyan-500 focus:outline-none"
                   required
                 >
                   {targets.map((t) => (
-                    <option key={t.id} value={t.id}>
+                    <option key={t.id} value={t.id} className="bg-slate-950 text-slate-100">
                       {t.name} ({t.host})
                     </option>
                   ))}
@@ -565,11 +565,11 @@ export default function Approvals() {
                 <select
                   value={newAssessmentId}
                   onChange={(e) => setNewAssessmentId(e.target.value)}
-                  className="input-field w-full text-xs"
+                  className="w-full text-xs bg-slate-950 text-slate-100 border border-slate-700/80 rounded-lg px-3 py-2 focus:border-cyan-500 focus:outline-none"
                   required
                 >
                   {assessments.map((a) => (
-                    <option key={a.id} value={a.id}>
+                    <option key={a.id} value={a.id} className="bg-slate-950 text-slate-100">
                       {a.name} ({a.status})
                     </option>
                   ))}
@@ -582,7 +582,7 @@ export default function Approvals() {
                   type="text"
                   value={newAction}
                   onChange={(e) => setNewAction(e.target.value)}
-                  className="input-field w-full text-xs"
+                  className="w-full text-xs bg-slate-950 text-slate-100 border border-slate-700/80 rounded-lg px-3 py-2 focus:border-cyan-500 focus:outline-none"
                   required
                 />
               </div>
@@ -593,7 +593,7 @@ export default function Approvals() {
                   rows={2}
                   value={newPurpose}
                   onChange={(e) => setNewPurpose(e.target.value)}
-                  className="input-field w-full text-xs"
+                  className="w-full text-xs bg-slate-950 text-slate-100 placeholder-slate-500 border border-slate-700/80 rounded-lg p-2.5 focus:border-cyan-500 focus:outline-none"
                   required
                 />
               </div>
@@ -604,7 +604,7 @@ export default function Approvals() {
                   type="text"
                   value={newRisk}
                   onChange={(e) => setNewRisk(e.target.value)}
-                  className="input-field w-full text-xs"
+                  className="w-full text-xs bg-slate-950 text-slate-100 border border-slate-700/80 rounded-lg px-3 py-2 focus:border-cyan-500 focus:outline-none"
                   required
                 />
               </div>
@@ -615,7 +615,7 @@ export default function Approvals() {
                   type="text"
                   value={newEvidence}
                   onChange={(e) => setNewEvidence(e.target.value)}
-                  className="input-field w-full text-xs"
+                  className="w-full text-xs bg-slate-950 text-slate-100 border border-slate-700/80 rounded-lg px-3 py-2 focus:border-cyan-500 focus:outline-none"
                 />
               </div>
 

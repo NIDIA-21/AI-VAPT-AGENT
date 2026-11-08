@@ -353,11 +353,11 @@ export default function ScanActivity() {
                 <select
                   value={selectedTargetId}
                   onChange={(e) => setSelectedTargetId(e.target.value)}
-                  className="input-field w-full text-sm"
+                  className="w-full text-sm bg-slate-950 text-slate-100 border border-slate-700/80 rounded-lg px-3 py-2.5 focus:border-cyan-500 focus:outline-none"
                   required
                 >
                   {targets.map((t) => (
-                    <option key={t.id} value={t.id}>
+                    <option key={t.id} value={t.id} className="bg-slate-950 text-slate-100 py-1.5">
                       {t.name} ({t.host}) — Ref: {t.auth_reference || 'N/A'}
                     </option>
                   ))}
@@ -373,7 +373,7 @@ export default function ScanActivity() {
                   placeholder="Leave blank to use target registered ports"
                   value={portsOverride}
                   onChange={(e) => setPortsOverride(e.target.value)}
-                  className="input-field w-full text-sm"
+                  className="w-full text-sm bg-slate-950 text-slate-100 placeholder-slate-500 border border-slate-700/80 rounded-lg px-3 py-2.5 focus:border-cyan-500 focus:outline-none font-mono"
                 />
                 <p className="text-[11px] text-slate-500 mt-1">
                   Excluded ports on the registered target will always be blocked regardless of overrides.
