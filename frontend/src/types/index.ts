@@ -497,3 +497,68 @@ export interface AgentDecisionItem {
   parameters?: string | null
   created_at: string
 }
+
+// ── Final Phase: Approvals & Reports Types ───────────────────────────────────
+
+export interface ApprovalRequest {
+  id: string
+  assessment_id: string
+  target_id: string
+  target_host: string
+  requested_action: string
+  validation_purpose: string
+  supporting_evidence?: string | null
+  risk_information: string
+  requested_by: string
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | string
+  reviewed_by?: string | null
+  decision_timestamp?: string | null
+  rejection_reason?: string | null
+  decision_notes?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ReportSummary {
+  assessment_id: string
+  assessment_name: string
+  target_id: string
+  target_name: string
+  target_host: string
+  auth_reference?: string | null
+  assessment_status: string
+  assessment_type: string
+  start_time?: string | null
+  completion_date?: string | null
+  total_findings: number
+  critical_findings: number
+  high_findings: number
+  medium_findings: number
+  low_findings: number
+  informational_findings: number
+  false_positives_count: number
+  confirmed_findings_count: number
+  scanner_jobs: {
+    id: string
+    scanner: string
+    status: string
+    target_host?: string | null
+    started_at?: string | null
+    finished_at?: string | null
+    error_message?: string | null
+  }[]
+  approvals_summary: Record<string, number>
+  assessment_limitations: string
+  generated_at: string
+}
+
+export interface ReportableAssessment {
+  id: string
+  name: string
+  target_id: string
+  target_name: string
+  target_host: string
+  status: string
+  findings_count: number
+  created_at: string
+}

@@ -136,6 +136,9 @@ class Assessment(Base):
     findings: Mapped[list["Finding"]] = relationship(
         back_populates="assessment", cascade="all, delete-orphan"
     )
+    approvals: Mapped[list["ApprovalRequest"]] = relationship(
+        back_populates="assessment", cascade="all, delete-orphan", lazy="selectin"
+    )
 
 
 class ScanJob(Base):
@@ -264,3 +267,38 @@ class AgentDecision(Base):
     execution_status: Mapped[str] = mapped_column(String(32), default="PLANNED")  # PLANNED, PENDING_APPROVAL, etc.
     parameters: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON config
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class ApprovalStatus(str, PyEnum):
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+    EXPIRED = "EXPIRED"
+
+
+class ApprovalRequest(Base):
+    """Human-in-the-loop review and approval workflow for validation actions."""
+
+    __tablename__ = "approval_requests"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    assessment_id: Mapped[str] = mapped_column(ForeignKey("assessments.id"))
+    target_id: Mapped[str] = mapped_column(ForeignKey("authorized_targets.id"))
+    target_host: Mapped[str] = mapped_column(String(255), nullable=False)
+    requested_action: Mapped[str] = mapped_column(String(128), nullable=False)
+    validation_purpose: Mapped[str] = mapped_column(Text, nullable=False)
+    supporting_evidence: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    risk_information: Mapped[str] = mapped_column(Text, nullable=False)
+    requested_by: Mapped[str] = mapped_column(String(255), default="ai_agent")
+    status: Mapped[str] = mapped_column(String(32), default=ApprovalStatus.PENDING.value)
+
+    reviewed_by: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    decision_timestamp: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    rejection_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    decision_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+    assessment: Mapped["Assessment"] = relationship(back_populates="approvals", lazy="selectin")
+    target: Mapped["AuthorizedTarget"] = relationship(lazy="selectin")

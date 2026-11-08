@@ -31,6 +31,9 @@ import type {
   Finding,
   ScanJob,
   CorrelationResult,
+  ApprovalRequest,
+  ReportSummary,
+  ReportableAssessment,
 } from '@/types'
 
 const api = axios.create({
@@ -183,6 +186,40 @@ export const findingsApi = {
     api.post<Finding>(`/findings/${id}/status`, payload).then((r) => r.data),
   correlate: (payload: { assessment_id: string }) =>
     api.post<CorrelationResult>('/findings/correlate', payload).then((r) => r.data),
+}
+
+// ── Final Phase: Human-in-the-Loop Approvals ──────────────────────────────
+
+export const approvalsApi = {
+  list: (params?: { assessment_id?: string; status?: string }) =>
+    api.get<ApprovalRequest[]>('/approvals', { params }).then((r) => r.data),
+  get: (id: string) =>
+    api.get<ApprovalRequest>(`/approvals/${id}`).then((r) => r.data),
+  create: (payload: {
+    assessment_id: string
+    target_id: string
+    target_host: string
+    requested_action: string
+    validation_purpose: string
+    supporting_evidence?: string
+    risk_information: string
+    requested_by?: string
+  }) => api.post<ApprovalRequest>('/approvals', payload).then((r) => r.data),
+  approve: (id: string, payload: { analyst_id: string; notes?: string }) =>
+    api.post<ApprovalRequest>(`/approvals/${id}/approve`, payload).then((r) => r.data),
+  reject: (id: string, payload: { analyst_id: string; rejection_reason: string; notes?: string }) =>
+    api.post<ApprovalRequest>(`/approvals/${id}/reject`, payload).then((r) => r.data),
+}
+
+// ── Final Phase: Assessment Reports ─────────────────────────────────────────
+
+export const reportsApi = {
+  listAssessments: () =>
+    api.get<ReportableAssessment[]>('/reports/assessments').then((r) => r.data),
+  getSummary: (assessmentId: string) =>
+    api.get<ReportSummary>(`/reports/assessments/${assessmentId}/summary`).then((r) => r.data),
+  getPdfUrl: (assessmentId: string) =>
+    `/api/v1/reports/assessments/${assessmentId}/pdf`,
 }
 
 export default api

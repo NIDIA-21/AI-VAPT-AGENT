@@ -439,9 +439,69 @@ export default function Integrations() {
 
                       <p className="text-xs text-slate-400 mb-3 leading-relaxed">{tool.description}</p>
 
+                      <div className="space-y-1.5 p-2 rounded bg-slate-900/60 border border-slate-800 text-[11px] font-mono">
+                        <div className="flex justify-between text-slate-400">
+                          <span>Integration Type:</span>
+                          <span className="text-slate-200">
+                            {tool.name === 'nmap'
+                              ? 'Live Scoped Subprocess'
+                              : ['zap', 'nikto'].includes(tool.name)
+                              ? 'Official Report Parser'
+                              : tool.name === 'metasploit'
+                              ? 'Human-Gated Framework'
+                              : 'Planned Adapter'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-slate-400">
+                          <span>Availability:</span>
+                          <span className={clsx(
+                            'font-semibold',
+                            tool.status === 'Available' ? 'text-emerald-400' :
+                            tool.status === 'Import Only' ? 'text-cyan-400' :
+                            tool.status === 'Planned' ? 'text-indigo-400' : 'text-slate-400'
+                          )}>
+                            {tool.status.toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-slate-400">
+                          <span>Version Detected:</span>
+                          <span className="text-slate-200 truncate max-w-[170px]" title={tool.version || 'None'}>
+                            {tool.version || 'None (Uninstalled)'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-slate-400">
+                          <span>Supported Formats:</span>
+                          <span className="text-cyan-300">
+                            {tool.name === 'nmap'
+                              ? 'XML (-oX -)'
+                              : tool.name === 'zap'
+                              ? 'Official JSON & XML'
+                              : tool.name === 'nikto'
+                              ? 'Official JSON & XML'
+                              : 'XML / JSON'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-slate-400">
+                          <span>Last Verified:</span>
+                          <span className="text-slate-300">
+                            {lastChecked ? lastChecked.toLocaleTimeString() : 'Current Session'}
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-slate-400 pt-1 border-t border-slate-800/60">
+                          <strong>Limitations: </strong>
+                          {tool.name === 'metasploit'
+                            ? 'Autonomous exploitation strictly disabled; human approval required.'
+                            : tool.name === 'nmap'
+                            ? 'Strict scope allowlist enforced; no arbitrary range scanning.'
+                            : ['zap', 'nikto'].includes(tool.name)
+                            ? 'Report ingestion mode active. Target must be registered.'
+                            : 'Adapter planned for future release.'}
+                        </div>
+                      </div>
+
                       {tool.path && (
-                        <p className="text-[10px] font-mono text-slate-400 truncate bg-slate-900/60 p-1.5 rounded border border-slate-800">
-                          {tool.path}
+                        <p className="text-[10px] font-mono text-slate-400 truncate bg-slate-900/60 p-1.5 rounded border border-slate-800 mt-2">
+                          Binary: {tool.path}
                         </p>
                       )}
                     </div>

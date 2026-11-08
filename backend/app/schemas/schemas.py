@@ -454,3 +454,74 @@ class ReportImportRequest(BaseModel):
 class CorrelationRequest(BaseModel):
     assessment_id: str = Field(..., description="Assessment UUID to run multi-tool correlation against")
 
+
+
+# ── Final Phase: Human-in-the-Loop Approval & PDF Report Schemas ─────────────
+
+
+class ApprovalRequestCreate(BaseModel):
+    assessment_id: str
+    target_id: str
+    target_host: str
+    requested_action: str
+    validation_purpose: str
+    supporting_evidence: Optional[str] = None
+    risk_information: str
+    requested_by: Optional[str] = "ai_agent"
+
+
+class ApprovalRequestResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    assessment_id: str
+    target_id: str
+    target_host: str
+    requested_action: str
+    validation_purpose: str
+    supporting_evidence: Optional[str] = None
+    risk_information: str
+    requested_by: str
+    status: str
+    reviewed_by: Optional[str] = None
+    decision_timestamp: Optional[datetime] = None
+    rejection_reason: Optional[str] = None
+    decision_notes: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class ApprovalDecisionRequest(BaseModel):
+    analyst_id: str = Field(..., min_length=1, description="Analyst identity performing approval")
+    notes: Optional[str] = None
+
+
+class ApprovalRejectionRequest(BaseModel):
+    analyst_id: str = Field(..., min_length=1, description="Analyst identity performing rejection")
+    rejection_reason: str = Field(..., min_length=3, description="Mandatory rationale for rejection")
+    notes: Optional[str] = None
+
+
+class ReportSummaryResponse(BaseModel):
+    assessment_id: str
+    assessment_name: str
+    target_id: str
+    target_name: str
+    target_host: str
+    auth_reference: Optional[str] = None
+    assessment_status: str
+    assessment_type: str
+    start_time: Optional[datetime] = None
+    completion_date: Optional[datetime] = None
+    total_findings: int
+    critical_findings: int
+    high_findings: int
+    medium_findings: int
+    low_findings: int
+    informational_findings: int
+    false_positives_count: int
+    confirmed_findings_count: int
+    scanner_jobs: List[Dict[str, Any]]
+    approvals_summary: Dict[str, int]
+    assessment_limitations: str
+    generated_at: datetime
