@@ -131,10 +131,22 @@ export default function Reports() {
         <div className="space-y-6">
           {/* Main Action Bar */}
           <div className="card p-6 border-cyan-500/30 bg-gradient-to-r from-slate-900 via-slate-900 to-navy-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
-            <div className="space-y-1">
-              <span className="text-xs uppercase font-mono tracking-wider text-cyan-400 font-semibold">
-                Report Ready for Export
-              </span>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <span
+                  className={clsx(
+                    'text-[10px] uppercase font-mono tracking-wider px-2.5 py-0.5 rounded border font-bold',
+                    summary.total_findings === 0
+                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+                      : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                  )}
+                >
+                  {summary.total_findings === 0 ? 'REPORT STATUS: INCONCLUSIVE (DRAFT)' : 'REPORT STATUS: COMPLETED'}
+                </span>
+                <span className="text-[11px] font-mono text-slate-400">
+                  {summary.total_findings === 0 ? 'Awaiting Scanner Evidence' : `${summary.total_findings} Verified Findings`}
+                </span>
+              </div>
               <h2 className="text-lg font-bold text-slate-100">{summary.assessment_name}</h2>
               <div className="flex items-center gap-4 text-xs text-slate-400 font-mono pt-1">
                 <span>Target: <strong className="text-slate-200">{summary.target_host}</strong></span>
@@ -143,20 +155,20 @@ export default function Reports() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 self-stretch sm:self-auto">
+            <div className="flex items-center gap-3 self-stretch sm:self-auto">
               <button
                 onClick={() => setShowPreviewModal(true)}
-                className="btn-secondary flex-1 sm:flex-initial text-xs px-4 py-2 flex items-center justify-center gap-2"
+                className="btn-secondary flex-1 sm:flex-initial text-xs px-4 py-2.5 flex items-center justify-center gap-2"
               >
                 <Eye className="w-4 h-4 text-cyan-400" />
-                View Report Summary
+                View Summary
               </button>
               <button
                 onClick={downloadPdf}
-                className="btn-primary flex-1 sm:flex-initial text-xs px-5 py-2 flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 shadow-glow-cyan"
+                className="flex-1 sm:flex-initial text-xs px-6 py-2.5 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-bold flex items-center justify-center gap-2 shadow-glow-cyan transition-all"
               >
                 <Download className="w-4 h-4" />
-                Download Official PDF
+                <span>Download Official PDF</span>
               </button>
             </div>
           </div>

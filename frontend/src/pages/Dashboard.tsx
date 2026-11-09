@@ -5,6 +5,10 @@ import {
   AlertTriangle,
   Clock,
   ShieldAlert,
+  CheckCircle2,
+  ArrowRight,
+  Shield,
+  Layers,
 } from 'lucide-react'
 import type {
   DashboardStats,
@@ -147,6 +151,99 @@ export default function Dashboard() {
 
       {/* ── Module 3: Primary Metric Cards ───────────────────────────────── */}
       <MetricCards stats={stats} loading={loading} />
+
+      {/* ── End-to-End Assessment Workflow Progress Indicator ────────── */}
+      <div className="card border-cyan-500/20 bg-navy-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-800/80 mb-3 gap-2">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+            <h3 className="text-xs font-mono font-bold tracking-wider text-slate-200 uppercase">
+              End-to-End Assessment Lifecycle Workflow
+            </h3>
+          </div>
+          <span className="text-[11px] font-mono text-cyan-400">
+            {stats.total_findings === 0 ? 'STATUS: AWAITING SCANNER EVIDENCE' : `ACTIVE TELEMETRY: ${stats.total_findings} FINDINGS`}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          {[
+            {
+              step: '1',
+              title: 'TARGET REGISTRATION',
+              status: stats.authorized_targets > 0 ? 'COMPLETE' : 'PENDING',
+              badge: `${stats.authorized_targets} Authorized`,
+              done: stats.authorized_targets > 0,
+            },
+            {
+              step: '2',
+              title: 'AI PLANNING',
+              status: stats.total_assessments > 0 ? 'COMPLETE' : 'PENDING',
+              badge: `${stats.total_assessments} Plans Built`,
+              done: stats.total_assessments > 0,
+            },
+            {
+              step: '3',
+              title: 'SCANNER EXECUTION / IMPORT',
+              status: stats.recent_scans > 0 || stats.active_scans > 0 ? 'ACTIVE' : 'AWAITING EVIDENCE',
+              badge: stats.recent_scans > 0 ? `${stats.recent_scans} Jobs Run` : 'Awaiting Ingestion',
+              done: stats.recent_scans > 0,
+              highlight: stats.recent_scans === 0,
+            },
+            {
+              step: '4',
+              title: 'VULNERABILITY ANALYSIS',
+              status: stats.total_findings > 0 ? 'PROCESSED' : 'STANDBY',
+              badge: `${stats.total_findings} Normalized`,
+              done: stats.total_findings > 0,
+            },
+            {
+              step: '5',
+              title: 'HUMAN REVIEW',
+              status: stats.pending_approvals > 0 ? 'ACTION REQUIRED' : 'GATED',
+              badge: `${stats.pending_approvals} Pending Sign-off`,
+              done: stats.pending_approvals === 0 && stats.total_assessments > 0,
+            },
+            {
+              step: '6',
+              title: 'REPORT GENERATION',
+              status: stats.total_assessments > 0 ? 'READY' : 'STANDBY',
+              badge: 'PDF Generator Active',
+              done: stats.total_assessments > 0,
+            },
+          ].map((item) => (
+            <div
+              key={item.title}
+              className={clsx(
+                'p-3 rounded-lg border text-xs flex flex-col justify-between transition-all',
+                item.done
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                  : item.highlight
+                  ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300 shadow-glow-cyan'
+                  : 'bg-navy-900 border-slate-800 text-slate-400'
+              )}
+            >
+              <div className="flex items-center justify-between mb-1.5 font-mono text-[10px]">
+                <span className="font-bold">STEP 0{item.step}</span>
+                {item.done ? (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                ) : (
+                  <Clock className="w-3.5 h-3.5 text-slate-500" />
+                )}
+              </div>
+              <p className="font-bold text-[11px] text-slate-100 leading-tight mb-1.5">{item.title}</p>
+              <div className="mt-auto pt-1.5 border-t border-slate-800/80 flex items-center justify-between text-[10px] font-mono">
+                <span className={item.done ? 'text-emerald-400' : item.highlight ? 'text-cyan-400 font-bold' : 'text-slate-500'}>
+                  {item.status}
+                </span>
+                <span className="text-slate-400 truncate max-w-[80px]" title={item.badge}>
+                  {item.badge}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* ── Middle Row: Vulnerability Chart + AI Agent Activity ──────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">

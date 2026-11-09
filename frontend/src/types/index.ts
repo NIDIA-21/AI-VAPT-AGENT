@@ -176,12 +176,14 @@ export interface ScopeValidationResponse {
   excluded_ports?: number[] | null
   excluded_paths?: string[] | null
   restrictions?: string | null
-  validated_at: string
+  validated_at?: string
+  validation_timestamp?: string
 }
 
 export interface ScopeAuditItem {
   id: string
-  timestamp: string
+  timestamp?: string
+  created_at?: string
   actor: string
   action: string
   target_id?: string | null

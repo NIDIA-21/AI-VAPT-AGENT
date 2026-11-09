@@ -450,7 +450,7 @@ export default function Integrations() {
                           <span>Integration Type:</span>
                           <span className="text-slate-200">
                             {tool.name === 'nmap'
-                              ? 'Live Scoped Subprocess'
+                              ? (tool.status === 'Available' ? 'Live Scoped Subprocess' : 'Report Parser (XML Import)')
                               : ['zap', 'nikto'].includes(tool.name)
                               ? 'Official Report Parser'
                               : tool.name === 'metasploit'
@@ -458,17 +458,30 @@ export default function Integrations() {
                               : 'Planned Adapter'}
                           </span>
                         </div>
-                        <div className="flex justify-between text-slate-400">
-                          <span>Availability:</span>
-                          <span className={clsx(
-                            'font-semibold',
-                            tool.status === 'Available' ? 'text-emerald-400' :
-                            tool.status === 'Import Only' ? 'text-cyan-400' :
-                            tool.status === 'Planned' ? 'text-indigo-400' : 'text-slate-400'
-                          )}>
-                            {tool.status.toUpperCase()}
-                          </span>
-                        </div>
+                        {tool.name === 'nmap' ? (
+                          <>
+                            <div className="flex justify-between text-slate-400">
+                              <span>Nmap Executable:</span>
+                              <span className="text-rose-400 font-semibold">NOT INSTALLED</span>
+                            </div>
+                            <div className="flex justify-between text-slate-400">
+                              <span>Nmap XML Parser:</span>
+                              <span className="text-cyan-400 font-semibold">IMPORT ONLY (Available)</span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex justify-between text-slate-400">
+                            <span>Availability:</span>
+                            <span className={clsx(
+                              'font-semibold',
+                              tool.status === 'Available' ? 'text-emerald-400' :
+                              tool.status === 'Import Only' ? 'text-cyan-400' :
+                              tool.status === 'Planned' ? 'text-indigo-400' : 'text-slate-400'
+                            )}>
+                              {tool.status.toUpperCase()}
+                            </span>
+                          </div>
+                        )}
                         <div className="flex justify-between text-slate-400">
                           <span>Version Detected:</span>
                           <span className="text-slate-200 truncate max-w-[170px]" title={tool.version || 'None'}>

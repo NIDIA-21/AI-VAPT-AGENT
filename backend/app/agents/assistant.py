@@ -76,15 +76,7 @@ class AssistantService:
             select(AuthorizedTarget).where(AuthorizedTarget.is_deleted == False)
         )).all()
 
-        if not target:
-            # Check if user mentioned any existing target host or name
-            msg_lower = message.lower()
-            for t in all_targets:
-                if t.host.lower() in msg_lower or t.name.lower() in msg_lower:
-                    target = t
-                    break
-
-        # Check if user mentioned an IP or domain pattern that is NOT in registered targets
+        # Check if user mentioned an IP or domain pattern in the query
         unregistered_host_found = None
         ip_match = re.search(r"\b(?:\d{1,3}\.){3}\d{1,3}\b", message)
         domain_match = re.search(r"\b(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}\b", message)
@@ -95,7 +87,32 @@ class AssistantService:
         elif domain_match and not any(ext in domain_match.group(0).lower() for ext in ["api", "ai", "vapt", "example"]):
             candidate_host = domain_match.group(0)
 
-        if candidate_host and not target:
+        # ── CRITICAL TARGET CONSISTENCY VERIFICATION ─────────────────────────
+        # When a user explicitly specifies an IP address or hostname in their prompt
+        # while an authorized target is selected in session context:
+        # Normalize both values safely, compare them, and reject any mismatch.
+        # NEVER silently substitute targets.
+        target_mismatch_detected = False
+        mismatch_requested = None
+        mismatch_authorized = None
+
+        if target and candidate_host:
+            try:
+                norm_candidate = normalize_and_validate_host(candidate_host)
+            except Exception:
+                norm_candidate = candidate_host.strip().lower()
+
+            try:
+                norm_target = normalize_and_validate_host(target.host)
+            except Exception:
+                norm_target = target.host.strip().lower()
+
+            if norm_candidate != norm_target:
+                target_mismatch_detected = True
+                mismatch_requested = candidate_host
+                mismatch_authorized = target.host
+
+        if not target and candidate_host:
             # Check if this candidate host is in registered targets
             matched = False
             for t in all_targets:
@@ -106,6 +123,14 @@ class AssistantService:
             if not matched:
                 unregistered_host_found = candidate_host
 
+        # If user didn't mention an IP, but mentioned an authorized target name or host
+        if not target and not candidate_host:
+            msg_lower = message.lower()
+            for t in all_targets:
+                if t.host.lower() in msg_lower or t.name.lower() in msg_lower:
+                    target = t
+                    break
+
         # 4. Generate AI Agent Response
         meta_info: Dict[str, Any] = {}
         plan_dict: Optional[Dict[str, Any]] = None
@@ -113,8 +138,39 @@ class AssistantService:
 
         engine_info = llm_service.get_engine_status()
 
+        # CASE 0: CRITICAL TARGET SCOPE MISMATCH
+        if target_mismatch_detected:
+            reply_text = (
+                f"### 🚨 TARGET SCOPE MISMATCH DETECTED\n\n"
+                f"**Assessment planning has been blocked.** A critical target inconsistency was detected:\n\n"
+                f"| Field | Value |\n"
+                f"|:---|:---|\n"
+                f"| **Requested Target (from your message)** | `{mismatch_requested}` |\n"
+                f"| **Selected Authorized Target (active session)** | `{mismatch_authorized}` ({target.name if target else 'Selected'}) |\n"
+                f"| **Status** | ❌ REJECTED — Inconsistent Scope |\n\n"
+                f"> **Strict Scope Policy Enforced**: The AI Agent enforces strict target consistency and will **never silently substitute** "
+                f"one target for another. Your prompt requested testing against `{mismatch_requested}`, but the current session context is locked to `{mismatch_authorized}`.\n\n"
+                f"**Required Analyst Action:**\n"
+                f"1. To assess `{mismatch_requested}`, change the Target Context in the left panel to `{mismatch_requested}` (register it in Target Scope first if not yet added).\n"
+                f"2. To assess `{mismatch_authorized}`, rephrase your request to reference `{mismatch_authorized}` without referencing other targets.\n\n"
+                f"*This rejection has been recorded in the platform security audit log.*"
+            )
+            meta_info["scope_violation"] = True
+            meta_info["target_mismatch"] = True
+            meta_info["requested_target"] = mismatch_requested
+            meta_info["selected_target"] = mismatch_authorized
+
+            # Record rejection in audit log
+            db.add(AuditLog(
+                actor=user_name,
+                action="agent.target_mismatch_rejected",
+                resource_type="authorized_target",
+                resource_id=target.id if target else None,
+                detail=f"Target Scope Mismatch: User prompt requested '{mismatch_requested}', but session was locked to '{mismatch_authorized}'. Planning stopped.",
+            ))
+
         # CASE A: User requested assessment or asked about a host that is NOT registered
-        if unregistered_host_found:
+        elif unregistered_host_found:
             reply_text = (
                 f"### ⚠️ Scope Security Alert: Unregistered Target Detected\n\n"
                 f"You referenced target **`{unregistered_host_found}`**, but it is **not registered** in the authorized target allowlist.\n\n"

@@ -15,7 +15,7 @@
   body {
     @apply bg-navy-950 text-slate-100 font-sans antialiased selection:bg-cyan-500/30 selection:text-cyan-200;
     min-height: 100vh;
-    background-color: #020611;
+    background-color: #071426;
   }
 
   /* ── Universal Dark Form Inputs & Select Fix ────────────────────── */
@@ -23,21 +23,21 @@
   input,
   textarea {
     color-scheme: dark;
-    background-color: #050a18 !important;
-    color: #f8fafc !important;
-    border-color: #1e293b;
+    background-color: #0B1729 !important;
+    color: #F8FAFC !important;
+    border-color: #162B46;
   }
 
   select option {
-    background-color: #060c1e !important;
-    color: #f8fafc !important;
+    background-color: #0B1729 !important;
+    color: #F8FAFC !important;
     padding: 8px 12px;
   }
 
   select option:hover,
   select option:checked {
-    background-color: #0284c7 !important;
-    color: #ffffff !important;
+    background-color: #22D3EE !important;
+    color: #071426 !important;
   }
 
   ::-webkit-scrollbar {
@@ -46,12 +46,12 @@
   }
 
   ::-webkit-scrollbar-track {
-    background-color: #020611;
+    background-color: #071426;
   }
 
   ::-webkit-scrollbar-thumb {
     @apply bg-slate-800 rounded-full;
-    border: 1px solid #111d36;
+    border: 1px solid #162B46;
   }
 
   ::-webkit-scrollbar-thumb:hover {
@@ -63,7 +63,7 @@
   /* ── Tactical Hacker Glass Cards ─────────────────────────────────── */
   .card {
     @apply bg-navy-800/90 border border-slate-800/90 rounded-xl p-6 shadow-hacker backdrop-blur-md;
-    background-color: rgba(9, 18, 38, 0.85);
+    background-color: #11213A;
   }
 
   .card-hover {
@@ -167,9 +167,9 @@ textarea,
 input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]),
 .input,
 .input-field {
-  background-color: #030712 !important;
-  color: #f8fafc !important;
-  border: 1px solid #334155 !important;
+  background-color: #0B1729 !important;
+  color: #F8FAFC !important;
+  border: 1px solid #162B46 !important;
   border-radius: 0.5rem !important;
 }
 
@@ -178,8 +178,8 @@ textarea:focus,
 input:focus,
 .input:focus,
 .input-field:focus {
-  border-color: #06b6d4 !important;
-  box-shadow: 0 0 0 1px rgba(6, 182, 212, 0.5) !important;
+  border-color: #22D3EE !important;
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.4) !important;
   outline: none !important;
 }
 

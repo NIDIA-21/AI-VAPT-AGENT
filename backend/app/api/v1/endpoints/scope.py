@@ -93,6 +93,7 @@ async def get_scope_audit(
             detail=log.detail,
             ip_address=log.ip_address,
             created_at=log.created_at,
+            timestamp=log.created_at,
         )
         for log in logs
     ]

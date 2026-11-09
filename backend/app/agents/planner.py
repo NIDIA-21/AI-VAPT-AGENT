@@ -15,7 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.llm_provider import llm_service
-from app.models.models import AgentDecision, AuthorizedTarget, TargetStatus
+from app.models.models import AgentDecision, AuthorizedTarget, Finding, ScanJob, TargetStatus
 from app.services.scope_validator import ScopeValidationService
 
 
@@ -106,6 +106,20 @@ class AssessmentPlanner:
         excluded_paths = target.excluded_paths or "None"
         restrictions = target.restrictions or "Safe vulnerability assessment only; no destructive actions."
 
+        # Fetch actual previous findings and scan history for target (context-aware reasoning)
+        prev_findings = (await db.scalars(
+            select(Finding).where(Finding.host == target.host, Finding.is_false_positive == False)
+        )).all()
+        prev_scans = (await db.scalars(
+            select(ScanJob).where(ScanJob.target_host == target.host)
+        )).all()
+
+        history_summary = (
+            f"{len(prev_findings)} previous finding(s) on record for {target.host}"
+            if prev_findings
+            else f"Zero previous findings on record for {target.host} (awaiting scanner report ingestion)"
+        )
+
         # Parse categories
         req_lower = requirements.lower()
         categories = selected_categories or []
@@ -119,113 +133,143 @@ class AssessmentPlanner:
         tool_recommendations: List[Dict[str, Any]] = []
 
         # ── Stage 1: Reconnaissance & Port Discovery ──────────────────────────
-        s1_obs = f"Target host '{target.host}' verified in active scope. Permitted ports: [{permitted_ports}]; Excluded ports: [{excluded_ports}]."
-        s1_inf = "Initial non-destructive TCP SYN and service fingerprinting is essential to establish active attack surface without triggering firewall blocks."
+        # TOOL CAPABILITY REALITY: Nmap CLI binary is NOT INSTALLED on host.
+        # Parser ingestion is AVAILABLE in IMPORT ONLY mode.
+        s1_obs = (
+            f"Target host '{target.host}' verified in active scope. Permitted ports: [{permitted_ports}]; Excluded ports: [{excluded_ports}]. "
+            f"History: {history_summary}. Tool status: Nmap executable is NOT INSTALLED; XML parser is IMPORT ONLY."
+        )
+        s1_inf = (
+            f"Initial non-destructive TCP SYN service discovery is required to identify open listening ports without triggering firewall blocks. "
+            f"Because Nmap executable is not installed locally, automated live scanning cannot execute directly. "
+            f"Recommendation: Run Nmap externally ('nmap -sS -sV -p {permitted_ports} -oX nmap_results.xml {target.host}') and ingest via Tool Integrations > Ingest Scanner Reports."
+        )
         s1_dec_id = str(uuid.uuid4())
 
         s1_tool = {
             "tool": "Nmap",
+            "display_name": "Nmap XML Parser",
             "category": "Network Discovery",
             "recommended": True,
-            "flags": f"-sS -sV -p {permitted_ports} --open",
-            "rationale": f"Safely scans permitted ports on {target.host} while enforcing port exclusions."
+            "mode": "IMPORT_ONLY",
+            "executable_status": "NOT_INSTALLED",
+            "flags": f"-sS -sV -p {permitted_ports} --open -oX <report.xml> (Import Only)",
+            "rationale": f"Ingests external Nmap XML scan results for {target.host} enforcing permitted ports [{permitted_ports}]. Local CLI binary is not installed.",
         }
         tool_recommendations.append(s1_tool)
 
         decisions.append(PlanDecision(
             id=s1_dec_id,
             stage="RECONNAISSANCE",
-            selected_tool="Nmap",
-            rationale="Establish accurate inventory of open ports and running service banners within authorized boundaries.",
+            selected_tool="Nmap XML Parser",
+            rationale="Establish accurate inventory of open ports and running service banners. Can execute live: NO (CLI not installed). Next step: Ingest external Nmap XML report.",
             evidence_and_observations=s1_obs,
             ai_inferences=s1_inf,
             execution_status="PLANNED",
-            parameters={"ports": permitted_ports, "flags": "-sS -sV", "scan_type": "SYN_PORT_DISCOVERY"},
+            parameters={"ports": permitted_ports, "flags": "-sS -sV", "scan_type": "SYN_PORT_DISCOVERY", "mode": "IMPORT_ONLY"},
             created_at=now_iso,
         ))
 
         stages.append(PlanStage(
             stage_number=1,
-            name="Passive Reconnaissance & Port Discovery",
+            name="Passive Reconnaissance & Port Discovery (Nmap XML Ingestion)",
             category="Network Discovery",
-            description=f"Map reachable network services on {target.host} strictly bound to permitted ports.",
-            recommended_tools=["Nmap"],
-            rationale="Must confirm open services before launching deeper protocol-specific audits.",
+            description=f"Map reachable network services on {target.host} via Nmap XML report ingestion (Local executable: NOT INSTALLED).",
+            recommended_tools=["Nmap XML Parser (Import Only)"],
+            rationale="Confirm open services before launching web-layer audits. Uses report ingestion to preserve evidence without live subprocess requirement.",
             requires_human_approval=False,
         ))
 
         # ── Stage 2: Web Server Configuration Inspection ──────────────────────
         has_web = any(term in permitted_ports for term in ["80", "443", "8080", "8443"]) or target.target_url is not None
         if has_web or "server_config" in categories or "web" in req_lower:
-            s2_obs = f"HTTP/HTTPS service detected in target specification ({target.target_url or target.host}). Excluded paths: [{excluded_paths}]."
-            s2_inf = "Web server misconfigurations (insecure HTTP verbs, missing security headers, default files) expose high risk and should be evaluated prior to dynamic crawl."
+            s2_obs = (
+                f"HTTP/HTTPS service detected in target specification ({target.target_url or target.host}). Excluded paths: [{excluded_paths}]. "
+                f"Tool capability: Nikto integration mode is IMPORT ONLY."
+            )
+            s2_inf = (
+                "Web server misconfigurations (dangerous HTTP methods, outdated software tokens, missing security headers) expose high risk. "
+                "Because Nikto runs in report import mode, the operator should execute Nikto externally (-Format json or xml) and upload the report to the platform."
+            )
             s2_dec_id = str(uuid.uuid4())
 
             s2_tool = {
                 "tool": "Nikto",
+                "display_name": "Nikto Parser",
                 "category": "Web Server Security",
                 "recommended": True,
-                "flags": f"-host {target.host} -Tuning 123bde",
-                "rationale": "Fast evaluation of dangerous files, outdated server software, and HTTP header policies."
+                "mode": "IMPORT_ONLY",
+                "executable_status": "IMPORT_ONLY",
+                "flags": f"-host {target.host} -Format json -output nikto.json (Import Only)",
+                "rationale": "Ingests official Nikto JSON or XML reports to identify dangerous files, HTTP headers, and server CVEs.",
             }
             tool_recommendations.append(s2_tool)
 
             decisions.append(PlanDecision(
                 id=s2_dec_id,
                 stage="CONFIG_AUDIT",
-                selected_tool="Nikto",
-                rationale="Audit server headers, cookie security flags, and known software vulnerabilities.",
+                selected_tool="Nikto Parser",
+                rationale="Audit server headers, cookie security flags, and known software vulnerabilities. Can execute live: NO (Import-only mode). Next step: Ingest Nikto report.",
                 evidence_and_observations=s2_obs,
                 ai_inferences=s2_inf,
                 execution_status="PLANNED",
-                parameters={"target": target.host, "tuning": "123bde", "excluded_paths": excluded_paths},
+                parameters={"target": target.host, "mode": "IMPORT_ONLY", "excluded_paths": excluded_paths},
                 created_at=now_iso,
             ))
 
             stages.append(PlanStage(
                 stage_number=2,
-                name="Web Server Configuration & Header Audit",
+                name="Web Server Configuration & Header Audit (Nikto Ingestion)",
                 category="Server Configuration",
-                description="Evaluate HTTP security headers, server components, and known web server CVEs.",
-                recommended_tools=["Nikto"],
+                description="Evaluate HTTP security headers, server components, and known web server CVEs via Nikto JSON/XML ingestion.",
+                recommended_tools=["Nikto Parser (Import Only)"],
                 rationale="Detect baseline security flaws in web server configuration before dynamic spidering.",
                 requires_human_approval=False,
             ))
 
         # ── Stage 3: Dynamic Application Vulnerability Scanning (DAST) ────────
         if has_web or "web_vapt" in categories or "web" in req_lower:
-            s3_obs = f"Active web application endpoints present. Strict path exclusions: [{excluded_paths}] take precedence over spidering."
-            s3_inf = "Automated DAST spider and scanner can uncover OWASP Top 10 flaws (XSS, Injection, SSRF). Spider must strictly ignore excluded paths like administrative/logout endpoints."
+            s3_obs = (
+                f"Active web application endpoints present. Strict path exclusions: [{excluded_paths}] take precedence over spidering. "
+                f"Tool capability: OWASP ZAP is configured in IMPORT ONLY mode."
+            )
+            s3_inf = (
+                "Dynamic application testing uncovers OWASP Top 10 vulnerabilities (XSS, Injection, SSRF). "
+                "Because ZAP runs in report import mode, export alerts from OWASP ZAP (JSON or XML) and upload via the Ingestion Hub."
+            )
             s3_dec_id = str(uuid.uuid4())
 
             s3_tool = {
                 "tool": "OWASP ZAP",
+                "display_name": "OWASP ZAP Parser",
                 "category": "DAST & Web Vulnerability",
                 "recommended": True,
-                "flags": f"spider --exclude {excluded_paths} --active-scan",
-                "rationale": "Deep dynamic crawling and vulnerability scanning respecting strict path exclusions."
+                "mode": "IMPORT_ONLY",
+                "executable_status": "IMPORT_ONLY",
+                "flags": f"Export Alerts -> JSON/XML (respecting exclusions {excluded_paths})",
+                "rationale": "Normalizes dynamic application security testing alerts and maps to CWE/WASC categories via report ingestion.",
             }
             tool_recommendations.append(s3_tool)
 
             decisions.append(PlanDecision(
                 id=s3_dec_id,
                 stage="WEB_APPLICATION_TESTING",
-                selected_tool="OWASP ZAP",
-                rationale="Detect injection vulnerabilities, cross-site scripting, and broken authentication across application routes.",
+                selected_tool="OWASP ZAP Parser",
+                rationale="Detect injection vulnerabilities, cross-site scripting, and broken authentication. Can execute live: NO (Import-only mode). Next step: Ingest ZAP report.",
                 evidence_and_observations=s3_obs,
                 ai_inferences=s3_inf,
                 execution_status="PLANNED",
-                parameters={"excluded_paths": excluded_paths, "spider_depth": 5, "policy": "OWASP_TOP_10"},
+                parameters={"excluded_paths": excluded_paths, "policy": "OWASP_TOP_10", "mode": "IMPORT_ONLY"},
                 created_at=now_iso,
             ))
 
             stages.append(PlanStage(
                 stage_number=3,
-                name="Dynamic Application Vulnerability Testing (DAST)",
+                name="Dynamic Application Vulnerability Testing (OWASP ZAP Ingestion)",
                 category="Web Application VAPT",
-                description="Spider web application endpoints and perform automated vulnerability assessment without traversing excluded paths.",
-                recommended_tools=["OWASP ZAP"],
-                rationale="Identifies runtime vulnerabilities in web forms, query parameters, and API endpoints.",
+                description="Spider web application endpoints and ingest normalized findings without traversing excluded paths.",
+                recommended_tools=["OWASP ZAP Parser (Import Only)"],
+                rationale="Identifies runtime vulnerabilities in web forms, query parameters, and API endpoints via verified report evidence.",
                 requires_human_approval=False,
             ))
 

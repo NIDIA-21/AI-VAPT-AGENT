@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 # ── Health ─────────────────────────────────────────────────────────────────────
@@ -139,6 +139,13 @@ class ScopeAuditItem(BaseModel):
     detail: Optional[str] = None
     ip_address: Optional[str] = None
     created_at: datetime
+    timestamp: Optional[datetime] = None
+
+    @model_validator(mode="after")
+    def populate_timestamp(self) -> ScopeAuditItem:
+        if self.timestamp is None and self.created_at is not None:
+            self.timestamp = self.created_at
+        return self
 
 
 class ScopeAuditResponse(BaseModel):

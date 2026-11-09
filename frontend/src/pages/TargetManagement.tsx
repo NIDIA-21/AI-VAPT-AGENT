@@ -27,6 +27,18 @@ import type {
   ScopeAuditItem,
 } from '@/types'
 
+function formatTimestamp(ts?: string | null): string {
+  if (!ts) return 'Just now'
+  const d = new Date(ts)
+  return isNaN(d.getTime()) ? 'Recently' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+}
+
+function formatDate(dateStr?: string | null): string {
+  if (!dateStr) return 'Indefinite'
+  const d = new Date(dateStr)
+  return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString()
+}
+
 export default function TargetManagement() {
   // State
   const [stats, setStats] = useState<TargetOverviewStats>({
@@ -377,7 +389,7 @@ export default function TargetManagement() {
                 </span>
               </div>
               <span className="text-[10px] text-slate-400 font-mono">
-                {new Date(simResult.validated_at).toLocaleTimeString()}
+                {formatTimestamp(simResult.validated_at || simResult.validation_timestamp)}
               </span>
             </div>
 
@@ -510,7 +522,7 @@ export default function TargetManagement() {
                         {target.auth_reference || 'N/A'}
                       </td>
                       <td className="px-4 py-3 text-slate-400 font-mono text-[11px]">
-                        {target.valid_to ? new Date(target.valid_to).toLocaleDateString() : 'Indefinite'}
+                        {target.valid_to ? formatDate(target.valid_to) : 'Indefinite'}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -561,7 +573,7 @@ export default function TargetManagement() {
                   <span className="text-slate-300 font-sans truncate max-w-xl">{ev.detail}</span>
                 </div>
                 <div className="text-slate-500 text-[10px] flex-shrink-0">
-                  {new Date(ev.timestamp).toLocaleTimeString()}
+                  {formatTimestamp(ev.timestamp || ev.created_at)}
                 </div>
               </div>
             ))}
@@ -816,8 +828,8 @@ export default function TargetManagement() {
               <div className="flex justify-between py-1 border-b border-slate-800">
                 <span className="text-slate-400">Validity Window:</span>
                 <span className="font-mono text-slate-200">
-                  {selectedTarget.valid_from ? new Date(selectedTarget.valid_from).toLocaleDateString() : '—'} to{' '}
-                  {selectedTarget.valid_to ? new Date(selectedTarget.valid_to).toLocaleDateString() : 'Indefinite'}
+                  {selectedTarget.valid_from ? formatDate(selectedTarget.valid_from) : '—'} to{' '}
+                  {selectedTarget.valid_to ? formatDate(selectedTarget.valid_to) : 'Indefinite'}
                 </span>
               </div>
               <div className="py-1 border-b border-slate-800">

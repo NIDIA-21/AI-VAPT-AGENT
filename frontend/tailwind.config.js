@@ -7,50 +7,45 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Ultra-dark stealth navy / hacker black backgrounds
+        // Official Hackathon Enterprise Security Palette
         navy: {
-          950: '#020611', // Deepest pitch void
-          900: '#040916', // Command shell background
-          850: '#070e1f', // Sub-panels
-          800: '#091226', // Tactical cards & modules
-          750: '#0c1730', // Card hover state
-          700: '#0f1d3d', // Elevated borders & dialogs
-          600: '#15274f', // Active interactive states
+          950: '#071426', // Main Background
+          900: '#0B1729', // Sidebar & Deep Headers
+          850: '#0E1C33', // Intermediate Containers
+          800: '#11213A', // Primary Cards
+          750: '#132641', // Card Hover State
+          700: '#162B46', // Secondary Panels
+          600: '#1E3A5F', // Active Interactive Elements
         },
-        // Charcoal surfaces
-        charcoal: {
-          950: '#020408',
-          900: '#090d16',
-          800: '#121826',
-          700: '#1e2638',
-          600: '#2d374d',
+        // Cybersecurity Brand Accents
+        cyan: {
+          400: '#22D3EE', // Primary Cyber Accent
+          500: '#06B6D4',
+          600: '#0891B2',
         },
-        // Cyber & Hacker terminal accents
-        cyber: {
-          black: '#01040a',
-          dark: '#030712',
-          panel: '#060b18',
-          border: '#111d36',
-          cyan: '#00f0ff',
-          neon: '#06b6d4',
-          matrix: '#10b981',
-          lime: '#22c55e',
-          amber: '#f59e0b',
-          crimson: '#f43f5e',
+        blue: {
+          500: '#3B82F6', // Secondary Brand Blue
+          600: '#2563EB',
         },
-        // Electric blue/cyan accents
-        electric: {
-          blue: '#2563eb',
-          cyan: '#06b6d4',
-          indigo: '#4f46e5',
+        slate: {
+          100: '#F8FAFC', // Main High-Contrast Text
+          300: '#CBD5E1',
+          400: '#B8C6D9', // Secondary Muted Text
+          500: '#64748B',
+        },
+        // Semantic Indicators
+        status: {
+          success: '#22C55E', // Green Success
+          warning: '#F59E0B', // Amber Warning
+          critical: '#F43F5E', // Rose Critical
         },
         // Severity colors
         severity: {
-          critical: '#ef4444',
-          high: '#f97316',
-          medium: '#f59e0b',
-          low: '#3b82f6',
-          info: '#6b7280',
+          critical: '#F43F5E',
+          high: '#F97316',
+          medium: '#F59E0B',
+          low: '#3B82F6',
+          info: '#64748B',
         },
       },
       fontFamily: {

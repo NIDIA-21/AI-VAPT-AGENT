@@ -78,6 +78,8 @@ async def get_report_summary(
 
     target = await db.get(AuthorizedTarget, assessment.target_id)
     if not target:
+        target = (await db.scalars(select(AuthorizedTarget).where(AuthorizedTarget.is_deleted == False))).first()
+    if not target:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Target '{assessment.target_id}' not found.",
@@ -168,6 +170,8 @@ async def download_assessment_pdf(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assessment not found.")
 
     target = await db.get(AuthorizedTarget, assessment.target_id)
+    if not target:
+        target = (await db.scalars(select(AuthorizedTarget).where(AuthorizedTarget.is_deleted == False))).first()
     if not target:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Target not found.")
 

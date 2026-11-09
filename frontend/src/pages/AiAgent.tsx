@@ -35,6 +35,126 @@ import type {
   PlanDecision,
 } from '@/types'
 
+function FormattedMessage({ content }: { content: string }) {
+  const isMismatch = content.includes('TARGET SCOPE MISMATCH')
+  const lines = content.split('\n')
+
+  return (
+    <div className={clsx('space-y-1.5 text-xs leading-relaxed', isMismatch && 'text-slate-100')}>
+      {lines.map((line, idx) => {
+        const trimmed = line.trim()
+        if (!trimmed) return <div key={idx} className="h-1" />
+
+        // Headings
+        if (trimmed.startsWith('### ')) {
+          return (
+            <div key={idx} className="pt-2 pb-1 border-b border-slate-800/80 mb-1">
+              <span className="text-xs font-bold font-mono text-cyan-300 uppercase tracking-wider">{trimmed.slice(4)}</span>
+            </div>
+          )
+        }
+        if (trimmed.startsWith('#### ')) {
+          return (
+            <h5 key={idx} className="font-bold text-xs text-slate-200 mt-2 font-mono">
+              {trimmed.slice(5)}
+            </h5>
+          )
+        }
+
+        // Table Rows
+        if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+          if (trimmed.replace(/[|\-:\s]/g, '') === '') {
+            return null // separator row
+          }
+          const cells = trimmed.split('|').map((c) => c.trim()).filter((_, i, arr) => i > 0 && i < arr.length - 1)
+          const isHeader = lines[idx + 1]?.trim().startsWith('|---') || lines[idx + 1]?.trim().startsWith('|:---')
+          return (
+            <div
+              key={idx}
+              className={clsx(
+                'grid grid-flow-col auto-cols-fr gap-2 px-2.5 py-1.5 rounded text-[11px] font-mono border my-0.5',
+                isHeader
+                  ? 'bg-slate-800/90 border-slate-700 text-cyan-300 font-bold'
+                  : 'bg-navy-900/80 border-slate-800 text-slate-300'
+              )}
+            >
+              {cells.map((cell, cIdx) => (
+                <span key={cIdx} className="truncate">
+                  {renderInlineFormatted(cell)}
+                </span>
+              ))}
+            </div>
+          )
+        }
+
+        // Blockquotes
+        if (trimmed.startsWith('>')) {
+          return (
+            <div
+              key={idx}
+              className="p-2.5 rounded-lg bg-navy-900 border-l-2 border-cyan-400 text-slate-300 text-[11px] my-1 font-mono"
+            >
+              {renderInlineFormatted(trimmed.replace(/^>\s*/, ''))}
+            </div>
+          )
+        }
+
+        // Bullet lists
+        if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+          return (
+            <div key={idx} className="flex items-start gap-2 pl-2 text-slate-300 my-0.5">
+              <span className="text-cyan-400 font-mono text-xs flex-shrink-0">•</span>
+              <span>{renderInlineFormatted(trimmed.slice(2))}</span>
+            </div>
+          )
+        }
+
+        // Numbered list
+        const numMatch = trimmed.match(/^(\d+)\.\s+(.*)$/)
+        if (numMatch) {
+          return (
+            <div key={idx} className="flex items-start gap-2 pl-2 text-slate-300 my-0.5">
+              <span className="text-cyan-400 font-mono text-xs flex-shrink-0">{numMatch[1]}.</span>
+              <span>{renderInlineFormatted(numMatch[2])}</span>
+            </div>
+          )
+        }
+
+        // Paragraph
+        return (
+          <p key={idx} className="text-slate-200">
+            {renderInlineFormatted(trimmed)}
+          </p>
+        )
+      })}
+    </div>
+  )
+}
+
+function renderInlineFormatted(text: string): React.ReactNode {
+  const tokens = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g)
+  return tokens.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return (
+        <strong key={i} className="font-bold text-slate-100">
+          {part.slice(2, -2)}
+        </strong>
+      )
+    }
+    if (part.startsWith('`') && part.endsWith('`')) {
+      return (
+        <code
+          key={i}
+          className="px-1.5 py-0.5 rounded bg-slate-800 text-cyan-300 font-mono text-[10px] border border-slate-700/60"
+        >
+          {part.slice(1, -1)}
+        </code>
+      )
+    }
+    return part
+  })
+}
+
 export default function AiAgent() {
   const navigate = useNavigate()
 
@@ -419,10 +539,32 @@ export default function AiAgent() {
                         : 'bg-navy-950/80 border-slate-800 text-slate-200 rounded-tl-none shadow-md'
                     )}
                   >
-                    {/* Render message text with basic formatting */}
-                    <div className="whitespace-pre-wrap font-sans text-xs space-y-2">
-                      {msg.content}
-                    </div>
+                    {/* Render message text with structured markdown and alert card formatting */}
+                    <FormattedMessage content={msg.content} />
+
+                    {/* Engine Execution Badge & Timestamp */}
+                    {!isUser && (
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-800/60 text-[10px] font-mono">
+                        <span
+                          className={clsx(
+                            'px-2 py-0.5 rounded border flex items-center gap-1',
+                            parsedMeta?.engine_info?.is_fallback
+                              ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+                              : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                          )}
+                        >
+                          <Sparkles className="w-2.5 h-2.5" />
+                          <span>
+                            {parsedMeta?.engine_info?.is_fallback
+                              ? 'RULE-BASED FALLBACK ENGINE'
+                              : 'LLM-GENERATED INTELLIGENCE'}
+                          </span>
+                        </span>
+                        <span className="text-slate-500">
+                          {new Date(msg.created_at).toLocaleTimeString()}
+                        </span>
+                      </div>
+                    )}
 
                     {/* If message attached a plan, render Plan Action Banner */}
                     {parsedMeta?.plan && (
@@ -461,9 +603,11 @@ export default function AiAgent() {
                       </div>
                     )}
 
-                    <div className="text-[10px] text-slate-500 font-mono text-right">
-                      {new Date(msg.created_at).toLocaleTimeString()}
-                    </div>
+                    {isUser && (
+                      <div className="text-[10px] text-blue-300 font-mono text-right">
+                        {new Date(msg.created_at).toLocaleTimeString()}
+                      </div>
+                    )}
                   </div>
                 </div>
               )
